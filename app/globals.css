@@ -128,3 +128,60 @@
     @apply font-sans scroll-smooth;
   }
 }
+/* ---------- Intro / reveal animations (pure CSS, compositor-friendly) ---------- */
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translate3d(0, var(--reveal-y, 24px), 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.reveal {
+  animation: reveal var(--reveal-dur, 0.8s) cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--reveal-delay, 0s);
+}
+
+@keyframes splash-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.splash-logo {
+  animation: splash-in 0.7s ease-out both;
+  will-change: transform;
+}
+
+/* Hero logo stays hidden until the splash logo has landed on it */
+html:not([data-splash="done"]) #hero-logo {
+  visibility: hidden;
+}
+
+@keyframes drift {
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.drift {
+  animation: drift var(--drift-dur, 60s) linear infinite;
+}
+
+.drift-reverse {
+  animation-direction: reverse;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .splash-logo,
+  .drift {
+    animation: none;
+  }
+}

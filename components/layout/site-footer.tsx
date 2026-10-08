@@ -14,9 +14,7 @@ export function SiteFooter() {
             </Link>
           ))}
         </nav>
-        <p>
-          © 2026 {siteConfig.name}. All rights reserved.
-        </p>
+        <p>© 2026 {siteConfig.name}. All rights reserved.</p>
       </div>
     </footer>
   );

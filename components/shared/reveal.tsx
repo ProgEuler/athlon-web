@@ -1,14 +1,14 @@
-"use client";
-
-import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
 
-/** Fades (and optionally slides) its children in after `delay` seconds. */
+/**
+ * Fades + slides its children in after `delay` seconds.
+ * Pure CSS (see `.reveal` in globals.css) so it runs without waiting for JS.
+ */
 export function Reveal({
   children,
   delay = 0,
   y = 24,
-  duration = 0.7,
+  duration = 0.8,
   className,
 }: {
   children: React.ReactNode;
@@ -18,13 +18,17 @@ export function Reveal({
   className?: string;
 }) {
   return (
-    <motion.div
-      className={cn(className)}
-      initial={{ opacity: 0, y }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration, delay, ease: [0.22, 1, 0.36, 1] }}
+    <div
+      className={cn("reveal", className)}
+      style={
+        {
+          "--reveal-delay": `${delay}s`,
+          "--reveal-y": `${y}px`,
+          "--reveal-dur": `${duration}s`,
+        } as React.CSSProperties
+      }
     >
       {children}
-    </motion.div>
+    </div>
   );
 }
