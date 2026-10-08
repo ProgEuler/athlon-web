@@ -1,0 +1,104 @@
+name: CI / Deploy
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Never run two deploys at once; a newer push cancels an older in-flight run
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Lint & build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+      - run: npm run lint
+      # next build also type-checks (it generates the route types tsc needs)
+      - run: npm run build
+
+  deploy:
+    name: Deploy to VPS
+    needs: check
+    # Only deploy from main (pushes / manual runs), never from PRs
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://athlongoapp.com
+    env:
+      IMAGE: athlon-web
+      APP_DIR: athlon-web # on the VPS, relative to the SSH user's home
+      KEEP_IMAGES: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      # Built here and streamed to the VPS, so the server needs no registry
+      # login and no access to this repo.
+      - name: Build image
+        run: docker build -t "$IMAGE:$GITHUB_SHA" -t "$IMAGE:latest" .
+
+      - name: Configure SSH
+        env:
+          SSH_HOST: ${{ secrets.VPS_HOST }}
+          SSH_USER: ${{ secrets.VPS_USER }}
+          SSH_PORT: ${{ secrets.VPS_PORT || '22' }}
+          SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          cat >> ~/.ssh/config <<EOF
+          Host vps
+            HostName $SSH_HOST
+            User $SSH_USER
+            Port $SSH_PORT
+            IdentityFile ~/.ssh/id_deploy
+            IdentitiesOnly yes
+            StrictHostKeyChecking yes
+          EOF
+
+      - name: Ship image and compose file
+        run: |
+          ssh vps "mkdir -p ~/$APP_DIR"
+          scp docker-compose.yml "vps:~/$APP_DIR/docker-compose.yml"
+          docker save "$IMAGE:$GITHUB_SHA" "$IMAGE:latest" | gzip | ssh vps 'gunzip | docker load'
+
+      - name: Restart container
+        run: |
+          ssh vps bash -s <<EOF
+          set -euo pipefail
+          cd ~/$APP_DIR
+          docker compose up -d --force-recreate --remove-orphans
+
+          echo "Waiting for landing-web to be healthy..."
+          for i in \$(seq 1 20); do
+            STATUS=\$(docker inspect --format '{{.State.Health.Status}}' landing-web 2>/dev/null || echo starting)
+            [ "\$STATUS" = healthy ] && break
+            sleep 3
+          done
+          echo "Health: \$STATUS"
+          [ "\$STATUS" = healthy ]
+
+          # Keep the newest $KEEP_IMAGES commit-tagged images for rollback
+          docker images "$IMAGE" --format '{{.Tag}}' | grep -v '^latest$' \
+            | tail -n +$(( KEEP_IMAGES + 1 )) | xargs -r -I{} docker rmi "$IMAGE:{}" || true
+          EOF
+
+      # Non-fatal until the backend nginx routes athlongoapp.com here
+      - name: Public smoke test
+        continue-on-error: true
+        run: curl -fsS -o /dev/null -w "HTTP %{http_code}\n" https://athlongoapp.com/

@@ -1,0 +1,17 @@
+# Runs on the VPS next to the backend stack (github.com/mahamudh472/Athlon-go).
+# The backend's nginx container reaches this one as "landing-web" over the
+# shared Docker network and handles TLS for athlongoapp.com.
+
+services:
+  landing-web:
+    image: athlon-web:latest
+    container_name: landing-web
+    restart: always
+    networks:
+      - athlongo
+
+networks:
+  athlongo:
+    # Created by the backend's compose project ("athlon-go")
+    external: true
+    name: athlon-go_athlongo_network
