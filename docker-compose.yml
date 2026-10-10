@@ -10,7 +10,7 @@ services:
     networks:
       - athlongo
     ports:
-      - "80:3000"
+      - "3000:80"
 
 networks:
   athlongo:
