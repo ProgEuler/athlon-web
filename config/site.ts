@@ -17,7 +17,7 @@ export const siteConfig = {
   playStoreUrl: "#",
   contactEmail: "support@example.com",
   icon: "/brand/icon.png",
-  logo: "/brand/logo.png",
+  logo: "/brand/logo.webp",
 };
 
 export const navLinks = [

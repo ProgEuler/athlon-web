@@ -1,16 +1,12 @@
 import { AppStoreBadge } from "@/components/shared/app-store-badge";
 import Image from "next/image";
-import { Parallax } from "@/components/motion/parallax";
 import { PhoneFrame } from "@/components/shared/phone-frame";
 import { Reveal } from "@/components/shared/reveal";
 import { Splash } from "@/components/shared/splash";
 import { screenshots, siteConfig } from "@/config/site";
 
 /** Seconds before the content starts revealing (logo intro runs first). */
-const INTRO_DELAY = 1.5;
-
-/** Scroll parallax distance (px) per phone, left to right. */
-const PARALLAX = [70, 35, 10, 35, 70];
+const INTRO_DELAY = 0.3;
 
 export function Hero() {
   return (
@@ -21,8 +17,8 @@ export function Hero() {
           id="hero-logo"
           src={siteConfig.logo}
           alt={siteConfig.name}
-          width={850}
-          height={300}
+          width={640}
+          height={221}
           className="-my-6 h-40 w-auto"
           priority
         />
@@ -45,20 +41,14 @@ export function Hero() {
       <Reveal delay={INTRO_DELAY + 0.4} y={120} duration={0.9}>
         <div className="mt-14 flex justify-center gap-4 sm:gap-6">
           {screenshots.map((src, i) => (
-            // Outer phones drift faster than the centre one on scroll
-            <Parallax
+            <PhoneFrame
               key={src}
-              offset={PARALLAX[i] ?? 0}
-              className={i === 0 || i === 4 ? "hidden md:block" : ""}
-            >
-              <PhoneFrame
-                src={src}
-                priority={i < 3}
-                className={`w-40 sm:w-56 ${
-                  i % 2 === 0 ? "translate-y-0" : "translate-y-10"
-                }`}
-              />
-            </Parallax>
+              src={src}
+              priority={i < 3}
+              className={`w-40 sm:w-56 ${
+                i % 2 === 0 ? "translate-y-0" : "translate-y-10"
+              } ${i === 0 || i === 4 ? "hidden md:block" : ""}`}
+            />
           ))}
         </div>
       </Reveal>

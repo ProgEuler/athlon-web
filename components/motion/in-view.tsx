@@ -1,8 +1,38 @@
 "use client";
 
-import { motion, type Variants } from "motion/react";
+import { Children, cloneElement, isValidElement, useEffect, useRef } from "react";
+import { cn } from "@/lib/utils";
 
-const EASE = [0.22, 1, 0.36, 1] as const;
+/**
+ * Scroll-reveal helpers. Pure CSS transitions (see `.rv` in globals.css) plus a
+ * single IntersectionObserver, so no animation library ships to the client.
+ */
+
+/** Adds `is-visible` to the element once it first scrolls into view. */
+function useReveal<T extends HTMLElement>(amount: number) {
+  const ref = useRef<T>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (typeof IntersectionObserver === "undefined") {
+      el.classList.add("is-visible");
+      return;
+    }
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        el.classList.add("is-visible");
+        io.disconnect();
+      },
+      { threshold: amount },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [amount]);
+
+  return ref;
+}
 
 /** Fades + slides up once when scrolled into view. */
 export function FadeIn({
@@ -18,28 +48,23 @@ export function FadeIn({
   scale?: number;
   className?: string;
 }) {
+  const ref = useReveal<HTMLDivElement>(0.3);
   return (
-    <motion.div
-      className={className}
-      initial={{ opacity: 0, y, scale }}
-      whileInView={{ opacity: 1, y: 0, scale: 1 }}
-      viewport={{ once: true, amount: 0.3 }}
-      transition={{ duration: 0.8, delay, ease: EASE }}
+    <div
+      ref={ref}
+      className={cn("rv", className)}
+      style={
+        {
+          "--rv-y": `${y}px`,
+          "--rv-scale": scale,
+          "--rv-delay": `${delay}s`,
+        } as React.CSSProperties
+      }
     >
       {children}
-    </motion.div>
+    </div>
   );
 }
-
-const container: Variants = {
-  hidden: {},
-  show: (stagger: number) => ({ transition: { staggerChildren: stagger } }),
-};
-
-const item: Variants = {
-  hidden: { opacity: 0, y: 32 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.7, ease: EASE } },
-};
 
 /** Reveals its <StaggerItem> children one after another when in view. */
 export function Stagger({
@@ -51,35 +76,45 @@ export function Stagger({
   stagger?: number;
   className?: string;
 }) {
+  const ref = useReveal<HTMLDivElement>(0.15);
   return (
-    <motion.div
-      className={className}
-      variants={container}
-      custom={stagger}
-      initial="hidden"
-      whileInView="show"
-      viewport={{ once: true, amount: 0.15 }}
-    >
-      {children}
-    </motion.div>
+    <div ref={ref} className={className}>
+      {Children.map(children, (child, i) =>
+        isValidElement<{ index?: number; stagger?: number }>(child)
+          ? cloneElement(child, { index: i, stagger })
+          : child,
+      )}
+    </div>
   );
 }
 
 export function StaggerItem({
   children,
   className,
+  index = 0,
+  stagger = 0.1,
 }: {
   children: React.ReactNode;
   className?: string;
+  index?: number;
+  stagger?: number;
 }) {
   return (
-    <motion.div className={className} variants={item}>
+    <div
+      className={cn("rv rv-item", className)}
+      style={
+        {
+          "--rv-y": "32px",
+          "--rv-delay": `${index * stagger}s`,
+        } as React.CSSProperties
+      }
+    >
       {children}
-    </motion.div>
+    </div>
   );
 }
 
-/** Icon badge that pops in with a spring when its Stagger parent reveals. */
+/** Icon badge that pops in when its Stagger parent reveals. */
 export function PopIn({
   children,
   className,
@@ -87,25 +122,5 @@ export function PopIn({
   children: React.ReactNode;
   className?: string;
 }) {
-  return (
-    <motion.div
-      className={className}
-      variants={{
-        hidden: { scale: 0.4, rotate: -12, opacity: 0 },
-        show: {
-          scale: 1,
-          rotate: 0,
-          opacity: 1,
-          transition: {
-            type: "spring",
-            stiffness: 260,
-            damping: 14,
-            delay: 0.15,
-          },
-        },
-      }}
-    >
-      {children}
-    </motion.div>
-  );
+  return <div className={cn("rv-pop", className)}>{children}</div>;
 }

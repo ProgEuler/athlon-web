@@ -9,7 +9,7 @@ export function SiteHeader() {
     <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur">
       <Reveal
         y={0}
-        delay={1.6}
+        delay={0.4}
         className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4"
       >
         <Logo />

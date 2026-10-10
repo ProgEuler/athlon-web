@@ -1,5 +1,4 @@
 import { FadeIn, Stagger, StaggerItem } from "@/components/motion/in-view";
-import { Parallax } from "@/components/motion/parallax";
 import { PhoneFrame } from "@/components/shared/phone-frame";
 import { highlights, spotlight } from "@/config/site";
 
@@ -18,13 +17,11 @@ export function Spotlight() {
           </p>
         </FadeIn>
         <FadeIn delay={0.2} y={80} scale={0.92}>
-          <Parallax offset={40}>
-            <PhoneFrame
-              src={spotlight.image}
-              className="mt-10 w-60 sm:w-72"
-              alt="Booking screen"
-            />
-          </Parallax>
+          <PhoneFrame
+            src={spotlight.image}
+            className="mt-10 w-60 sm:w-72"
+            alt="Booking screen"
+          />
         </FadeIn>
       </div>
 

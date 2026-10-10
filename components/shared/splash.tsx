@@ -5,8 +5,8 @@ import { useEffect, useRef, useState } from "react";
 import { siteConfig } from "@/config/site";
 
 /** Seconds the logo rests in the middle of the screen before flying up. */
-const HOLD_MS = 1100;
-const FLY_MS = 1000;
+const HOLD_MS = 500;
+const FLY_MS = 700;
 
 // Module-level so client-side navigations back to "/" don't replay it,
 // while a hard reload (fresh module) does.
@@ -71,8 +71,8 @@ export function Splash() {
         ref={logoRef}
         src={siteConfig.logo}
         alt=""
-        width={850}
-        height={300}
+        width={640}
+        height={221}
         priority
         className="splash-logo h-40 w-auto"
         style={{ transform: "scale(1.7)" }}
